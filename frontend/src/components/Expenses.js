@@ -41,7 +41,7 @@ const Expenses = () => {
   const fetchExpenses = async () => {
     try {
       const params = {};
-      if (selectedCategory) params.category = selectedCategory;
+      if (selectedCategory && selectedCategory !== 'all') params.category = selectedCategory;
       
       const response = await api.get('/expenses', { params });
       setExpenses(response.data);
