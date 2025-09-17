@@ -247,7 +247,7 @@ const Expenses = () => {
                 <SelectValue placeholder="All categories" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">All Categories</SelectItem>
+                <SelectItem value="all">All Categories</SelectItem>
                 {expenseCategories.map((category) => (
                   <SelectItem key={category.value} value={category.value}>
                     <div className="flex items-center gap-2">
