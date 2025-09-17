@@ -207,7 +207,7 @@ const Students = () => {
                 <SelectValue placeholder="Filter by course" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">All Courses</SelectItem>
+                <SelectItem value="all">All Courses</SelectItem>
                 {courses.map((course) => (
                   <SelectItem key={course} value={course}>
                     {course}
