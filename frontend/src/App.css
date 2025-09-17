@@ -1,34 +1,218 @@
-.App-logo {
-    height: 40vmin;
-    pointer-events: none;
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
 }
 
-@media (prefers-reduced-motion: no-preference) {
-    .App-logo {
-        animation: App-logo-spin infinite 20s linear;
-    }
+body {
+  font-family: 'Inter', sans-serif;
+  line-height: 1.6;
+  color: #334155;
 }
 
-.App-header {
-    background-color: #0f0f10;
-    min-height: 100vh;
-    display: flex;
+/* Smooth scrolling */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f5f9;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+/* Focus styles for accessibility */
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline: 2px solid #3b82f6;
+  outline-offset: 2px;
+}
+
+/* Animation classes */
+.animate-fadeIn {
+  animation: fadeIn 0.3s ease-in-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-slideIn {
+  animation: slideIn 0.4s ease-out;
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateX(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* Hover effects */
+.hover-lift {
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.hover-lift:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 25px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+}
+
+/* Glass morphism effect */
+.glass {
+  background: rgba(255, 255, 255, 0.25);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+}
+
+/* Gradient text */
+.gradient-text {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Card styles */
+.finance-card {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+}
+
+.student-card {
+  background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+  color: white;
+}
+
+.payment-card {
+  background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+  color: white;
+}
+
+.expense-card {
+  background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
+  color: white;
+}
+
+/* Loading animation */
+.loading-spinner {
+  width: 20px;
+  height: 20px;
+  border: 2px solid #e2e8f0;
+  border-top: 2px solid #3b82f6;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* Status badges */
+.status-paid {
+  background: linear-gradient(135deg, #10b981, #059669);
+  color: white;
+}
+
+.status-pending {
+  background: linear-gradient(135deg, #f59e0b, #d97706);
+  color: white;
+}
+
+.status-overdue {
+  background: linear-gradient(135deg, #ef4444, #dc2626);
+  color: white;
+}
+
+/* Responsive design helpers */
+@media (max-width: 768px) {
+  .mobile-stack {
     flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    font-size: calc(10px + 2vmin);
-    color: white;
+  }
+  
+  .mobile-full {
+    width: 100%;
+  }
 }
 
-.App-link {
-    color: #61dafb;
+/* Form enhancements */
+.form-group {
+  margin-bottom: 1.5rem;
 }
 
-@keyframes App-logo-spin {
-    from {
-        transform: rotate(0deg);
-    }
-    to {
-        transform: rotate(360deg);
-    }
+.form-floating {
+  position: relative;
+}
+
+.form-floating input:focus + label,
+.form-floating input:not(:placeholder-shown) + label {
+  transform: translateY(-1.5rem) scale(0.85);
+  color: #3b82f6;
+}
+
+.form-floating label {
+  position: absolute;
+  top: 0.75rem;
+  left: 0.75rem;
+  transition: all 0.2s ease;
+  pointer-events: none;
+  color: #64748b;
+}
+
+/* Table enhancements */
+.table-hover tbody tr:hover {
+  background-color: #f8fafc;
+}
+
+/* Button enhancements */
+.btn-gradient {
+  background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+  border: none;
+  color: white;
+  transition: all 0.3s ease;
+}
+
+.btn-gradient:hover {
+  background: linear-gradient(135deg, #1d4ed8, #1e40af);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
+}
+
+/* Custom utilities */
+.text-shadow {
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.border-gradient {
+  border: 2px solid transparent;
+  background: linear-gradient(white, white) padding-box,
+              linear-gradient(135deg, #3b82f6, #8b5cf6) border-box;
 }
