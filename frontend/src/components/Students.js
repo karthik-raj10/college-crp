@@ -35,7 +35,7 @@ const Students = () => {
     try {
       const params = {};
       if (searchTerm) params.search = searchTerm;
-      if (selectedCourse) params.course = selectedCourse;
+      if (selectedCourse && selectedCourse !== 'all') params.course = selectedCourse;
       
       const response = await api.get('/students', { params });
       setStudents(response.data);
