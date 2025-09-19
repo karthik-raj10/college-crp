@@ -16,12 +16,34 @@ ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
 
 # MongoDB connection
+# MongoDB connection with certifi CA
+import certifi
+from motor.motor_asyncio import AsyncIOMotorClient
+import os
+
 mongo_url = os.environ['MONGO_URL']
-client = AsyncIOMotorClient(mongo_url)
-db = client[os.environ['DB_NAME']]
+db_name = os.environ['DB_NAME']
+
+client = AsyncIOMotorClient(
+    mongo_url,
+    tls=True,
+    tlsCAFile=certifi.where(),
+    serverSelectionTimeoutMS=10000
+)
+db = client[db_name]
+
+
 
 # Create the main app without a prefix
 app = FastAPI(title="College Resource Planning System", version="1.0.0")
+
+@app.on_event("startup")
+async def startup_ping():
+    try:
+        await db.command("ping")
+        print("✅ MongoDB ping OK")
+    except Exception as e:
+        print("❌ MongoDB ping failed:", e)
 
 # Create a router with the /api prefix
 api_router = APIRouter(prefix="/api")

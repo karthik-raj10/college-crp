@@ -31,7 +31,10 @@ dist/
 dist
 
 # Environment files (comprehensive coverage)
-
+.env
+.env.local
+.env.development
+.env.production
 *token.json*
 *credentials.json*
 
@@ -77,4 +80,23 @@ agenthub/agents/youtube/db
 .cache/
 
 # Mobile development
-android-sdk/ 
+android-sdk/
+# Explicitly ignore your backend virtual environment
+backend/venv312/
+
+# Ignore Python bytecode everywhere
+*.py[cod]
+
+# Ignore frontend build artifacts (React/Vercel)
+frontend/.next/
+frontend/out/
+frontend/build/
+
+# Ignore local database files (if you ever use SQLite)
+*.db
+*.sqlite3
+# Environment files
+.env
+*.env
+backend/.env
+frontend/.env
