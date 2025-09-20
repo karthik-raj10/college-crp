@@ -197,9 +197,10 @@ const Payments = () => {
                     </SelectTrigger>
                     <SelectContent>
                       {studentFeeRecords.map((record) => (
-                        <SelectItem key={record.id} value={record.id}>
-                          Pending: ₹{(record.amount_due - record.amount_paid).toLocaleString()}
-                        </SelectItem>
+                       <SelectItem key={record.id} value={record.id}>
+  {`${record.fee_name} — Paid: ₹${record.amount_paid} | Due: ₹${record.amount_due - record.amount_paid}`}
+</SelectItem>
+
                       ))}
                     </SelectContent>
                   </Select>
