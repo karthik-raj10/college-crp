@@ -100,6 +100,7 @@ class StudentFeeRecord(BaseModel):
     due_date: datetime
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    fee_name: Optional[str] = None   # 👈 add this
 
 class Payment(BaseModel):
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
@@ -199,7 +200,6 @@ async def get_fee_structure(fee_id: str):
     if not fee_structure:
         raise HTTPException(status_code=404, detail="Fee structure not found")
     return FeeStructure(**parse_from_mongo(fee_structure))
-
 # Student endpoints
 @api_router.post("/students", response_model=Student)
 async def create_student(student: StudentCreate):
@@ -208,11 +208,25 @@ async def create_student(student: StudentCreate):
     if existing:
         raise HTTPException(status_code=400, detail="Student ID already exists")
     
+    # Create the student
     student_dict = student.dict()
     student_obj = Student(**student_dict)
     student_doc = prepare_for_mongo(student_obj.dict())
     await db.students.insert_one(student_doc)
+
+    # 🔥 Auto-create fee records for this student based on all fee structures
+    fee_structures = await db.fee_structures.find().to_list(1000)
+    for fs in fee_structures:
+        record = StudentFeeRecord(
+            student_id=student_obj.id,
+            fee_structure_id=fs["id"],
+            amount_due=fs["amount"],
+            due_date=datetime.now(timezone.utc)  # you can adjust due date logic if needed
+        )
+        await db.student_fee_records.insert_one(prepare_for_mongo(record.dict()))
+
     return student_obj
+
 
 @api_router.get("/students", response_model=List[Student])
 async def get_students(search: Optional[str] = Query(None), course: Optional[str] = Query(None)):
@@ -229,30 +243,28 @@ async def get_students(search: Optional[str] = Query(None), course: Optional[str
     students = await db.students.find(query).to_list(1000)
     return [Student(**parse_from_mongo(student)) for student in students]
 
-@api_router.get("/students/{student_id}", response_model=Student)
-async def get_student(student_id: str):
-    student = await db.students.find_one({"id": student_id})
-    if not student:
-        raise HTTPException(status_code=404, detail="Student not found")
-    return Student(**parse_from_mongo(student))
-
 # Student Fee Record endpoints
-@api_router.post("/student-fee-records", response_model=StudentFeeRecord)
-async def create_student_fee_record(record: StudentFeeRecordCreate):
-    # Verify student and fee structure exist
-    student = await db.students.find_one({"id": record.student_id})
-    fee_structure = await db.fee_structures.find_one({"id": record.fee_structure_id})
+@api_router.get("/student-fee-records")
+async def get_student_fee_records(
+    student_id: Optional[str] = Query(None),
+    status: Optional[PaymentStatus] = Query(None)
+):
+    query = {}
+    if student_id:
+        query["student_id"] = student_id
+    if status:
+        query["payment_status"] = status
     
-    if not student:
-        raise HTTPException(status_code=404, detail="Student not found")
-    if not fee_structure:
-        raise HTTPException(status_code=404, detail="Fee structure not found")
-    
-    record_dict = record.dict()
-    record_obj = StudentFeeRecord(**record_dict)
-    record_doc = prepare_for_mongo(record_obj.dict())
-    await db.student_fee_records.insert_one(record_doc)
-    return record_obj
+    records = await db.student_fee_records.find(query).to_list(1000)
+
+    # 🔥 Attach fee_name from fee_structures
+    enriched_records = []
+    for record in records:
+        fs = await db.fee_structures.find_one({"id": record["fee_structure_id"]})
+        record["fee_name"] = fs["name"] if fs else "Unknown Fee"
+        enriched_records.append(parse_from_mongo(record))
+
+    return enriched_records
 
 @api_router.get("/student-fee-records", response_model=List[StudentFeeRecord])
 async def get_student_fee_records(
