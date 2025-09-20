@@ -22,3 +22,16 @@ Deployed on **Vercel** (frontend) and **Render** (backend).
 ---
 
 ## 📂 Project Structure
+college-cpp/ 
+│── backend/ # FastAPI backend
+│ ├── server.py # Main entrypoint
+│ ├── routes/ # API routes
+│ └── models/ # Pydantic models
+│
+│── frontend/ # React frontend
+│ ├── src/ # Components & pages
+│ └── public/
+│
+│── tests/ # Unit & integration tests
+│── .gitignore
+│── README.md
