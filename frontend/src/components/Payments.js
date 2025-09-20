@@ -190,35 +190,35 @@ const Payments = () => {
                   </SelectTrigger>
                   <SelectContent>
                     {students.map((student) => (
-                      <SelectItem key={record.id} value={record.id}>
-  {`${record.fee_name || 'Fee'} — Paid: ₹${record.amount_paid.toLocaleString()} | Due: ₹${(record.amount_due - record.amount_paid).toLocaleString()} | Status: ${record.payment_status}`}
-</SelectItem>
-                    ))}
+  <SelectItem key={student.id} value={student.id}>
+    {student.name} ({student.student_id})
+  </SelectItem>
+))}
                   </SelectContent>
                 </Select>
               </div>
               
-              {formData.student_id && (
-                <div className="space-y-2">
-                  <Label htmlFor="student_fee_record_id">Fee Record *</Label>
-                  <Select 
-                    value={formData.student_fee_record_id} 
-                    onValueChange={(value) => handleInputChange('student_fee_record_id', value)}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select fee record" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {studentFeeRecords.map((record) => (
-                       <SelectItem key={record.id} value={record.id}>
-  {`Due: ₹${record.amount_due.toLocaleString()} | Paid: ₹${record.amount_paid.toLocaleString()} | Status: ${record.payment_status}`}
-</SelectItem>
- 
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              )}
+{formData.student_id && (
+  <div className="space-y-2">
+    <Label htmlFor="student_fee_record_id">Fee Record *</Label>
+    <Select 
+      value={formData.student_fee_record_id} 
+      onValueChange={(value) => handleInputChange('student_fee_record_id', value)}
+    >
+      <SelectTrigger>
+        <SelectValue placeholder="Select fee record" />
+      </SelectTrigger>
+      <SelectContent>
+        {studentFeeRecords.map((record) => (
+          <SelectItem key={record.id} value={record.id}>
+            {`${record.fee_name || 'Fee'} — Paid: ₹${(record.amount_paid || 0).toLocaleString()} | Due: ₹${((record.amount_due || 0) - (record.amount_paid || 0)).toLocaleString()} | Status: ${record.payment_status || 'pending'}`}
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
+  </div>
+)}
+
               
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
