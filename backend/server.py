@@ -89,7 +89,6 @@ class Student(BaseModel):
     year: int
     phone: Optional[str] = None
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
-
 class StudentFeeRecord(BaseModel):
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     student_id: str
@@ -101,11 +100,10 @@ class StudentFeeRecord(BaseModel):
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     fee_name: Optional[str] = None   # 👈 add this
-
 class Payment(BaseModel):
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     student_id: str
-    student_fee_record_id: str
+    fee_structure_id: Optional[str] = None   # 👈 optional, if you still want to tag Tuition/Hostel/etc.
     amount: float
     payment_date: datetime
     payment_method: str = "cash"
@@ -147,12 +145,13 @@ class StudentFeeRecordCreate(BaseModel):
 
 class PaymentCreate(BaseModel):
     student_id: str
-    student_fee_record_id: str
+    fee_structure_id: Optional[str] = None
     amount: float
     payment_date: datetime
     payment_method: str = "cash"
     transaction_id: Optional[str] = None
     notes: Optional[str] = None
+
 
 class ExpenseCreate(BaseModel):
     title: str
@@ -283,32 +282,23 @@ async def get_student_fee_records(
 # Payment endpoints
 @api_router.post("/payments", response_model=Payment)
 async def create_payment(payment: PaymentCreate):
-    # Verify student fee record exists
-    fee_record = await db.student_fee_records.find_one({"id": payment.student_fee_record_id})
-    if not fee_record:
-        raise HTTPException(status_code=404, detail="Student fee record not found")
-    
+    # ✅ Verify student exists
+    student = await db.students.find_one({"id": payment.student_id})
+    if not student:
+        raise HTTPException(status_code=404, detail="Student not found")
+
+    # ✅ (Optional) verify fee structure exists if provided
+    if payment.fee_structure_id:
+        fs = await db.fee_structures.find_one({"id": payment.fee_structure_id})
+        if not fs:
+            raise HTTPException(status_code=404, detail="Fee structure not found")
+
+    # ✅ Create and insert payment
     payment_dict = payment.dict()
     payment_obj = Payment(**payment_dict)
     payment_doc = prepare_for_mongo(payment_obj.dict())
     await db.payments.insert_one(payment_doc)
-    
-    # Update student fee record
-    fee_record = StudentFeeRecord(**parse_from_mongo(fee_record))
-    new_amount_paid = fee_record.amount_paid + payment.amount
-    new_status = PaymentStatus.PAID if new_amount_paid >= fee_record.amount_due else PaymentStatus.PENDING
-    
-    await db.student_fee_records.update_one(
-        {"id": payment.student_fee_record_id},
-        {
-            "$set": {
-                "amount_paid": new_amount_paid,
-                "payment_status": new_status,
-                "updated_at": datetime.now(timezone.utc).isoformat()
-            }
-        }
-    )
-    
+
     return payment_obj
 
 @api_router.get("/payments", response_model=List[Payment])
