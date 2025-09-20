@@ -236,7 +236,10 @@ const Students = () => {
                     </div>
                     <div>
                       <CardTitle className="text-lg">{student.name}</CardTitle>
-                      <CardDescription>ID: {student.student_id}</CardDescription>
+                     <CardDescription>
+  Roll No: {student.student_id} <br />
+  UUID: {student.id}
+</CardDescription>
                     </div>
                   </div>
                   <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
