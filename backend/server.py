@@ -100,10 +100,11 @@ class StudentFeeRecord(BaseModel):
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     fee_name: Optional[str] = None   # 👈 add this
+
 class Payment(BaseModel):
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     student_id: str
-    fee_structure_id: Optional[str] = None   # 👈 optional, if you still want to tag Tuition/Hostel/etc.
+    fee_structure_id: Optional[str] = None   # 👈 optional
     amount: float
     payment_date: datetime
     payment_method: str = "cash"
@@ -145,12 +146,13 @@ class StudentFeeRecordCreate(BaseModel):
 
 class PaymentCreate(BaseModel):
     student_id: str
-    fee_structure_id: Optional[str] = None
+    fee_structure_id: Optional[str] = None   # 👈 optional
     amount: float
     payment_date: datetime
     payment_method: str = "cash"
     transaction_id: Optional[str] = None
     notes: Optional[str] = None
+
 
 
 class ExpenseCreate(BaseModel):
@@ -178,7 +180,6 @@ def parse_from_mongo(item):
                 except:
                     pass
     return item
-
 # Fee Structure endpoints
 @api_router.post("/fee-structures", response_model=FeeStructure)
 async def create_fee_structure(fee_structure: FeeStructureCreate):
@@ -199,6 +200,8 @@ async def get_fee_structure(fee_id: str):
     if not fee_structure:
         raise HTTPException(status_code=404, detail="Fee structure not found")
     return FeeStructure(**parse_from_mongo(fee_structure))
+
+
 # Student endpoints
 @api_router.post("/students", response_model=Student)
 async def create_student(student: StudentCreate):
@@ -213,16 +216,7 @@ async def create_student(student: StudentCreate):
     student_doc = prepare_for_mongo(student_obj.dict())
     await db.students.insert_one(student_doc)
 
-    # 🔥 Auto-create fee records for this student based on all fee structures
-    fee_structures = await db.fee_structures.find().to_list(1000)
-    for fs in fee_structures:
-        record = StudentFeeRecord(
-            student_id=student_obj.id,
-            fee_structure_id=fs["id"],
-            amount_due=fs["amount"],
-            due_date=datetime.now(timezone.utc)  # you can adjust due date logic if needed
-        )
-        await db.student_fee_records.insert_one(prepare_for_mongo(record.dict()))
+    # ❌ Removed auto‑create fee records
 
     return student_obj
 
@@ -242,42 +236,9 @@ async def get_students(search: Optional[str] = Query(None), course: Optional[str
     students = await db.students.find(query).to_list(1000)
     return [Student(**parse_from_mongo(student)) for student in students]
 
-# Student Fee Record endpoints
-@api_router.get("/student-fee-records")
-async def get_student_fee_records(
-    student_id: Optional[str] = Query(None),
-    status: Optional[PaymentStatus] = Query(None)
-):
-    query = {}
-    if student_id:
-        query["student_id"] = student_id
-    if status:
-        query["payment_status"] = status
-    
-    records = await db.student_fee_records.find(query).to_list(1000)
 
-    # 🔥 Attach fee_name from fee_structures
-    enriched_records = []
-    for record in records:
-        fs = await db.fee_structures.find_one({"id": record["fee_structure_id"]})
-        record["fee_name"] = fs["name"] if fs else "Unknown Fee"
-        enriched_records.append(parse_from_mongo(record))
+# ❌ Removed Student Fee Record endpoints
 
-    return enriched_records
-
-@api_router.get("/student-fee-records", response_model=List[StudentFeeRecord])
-async def get_student_fee_records(
-    student_id: Optional[str] = Query(None),
-    status: Optional[PaymentStatus] = Query(None)
-):
-    query = {}
-    if student_id:
-        query["student_id"] = student_id
-    if status:
-        query["payment_status"] = status
-    
-    records = await db.student_fee_records.find(query).to_list(1000)
-    return [StudentFeeRecord(**parse_from_mongo(record)) for record in records]
 
 # Payment endpoints
 @api_router.post("/payments", response_model=Payment)
@@ -300,6 +261,7 @@ async def create_payment(payment: PaymentCreate):
     await db.payments.insert_one(payment_doc)
 
     return payment_obj
+
 
 @api_router.get("/payments", response_model=List[Payment])
 async def get_payments(student_id: Optional[str] = Query(None)):

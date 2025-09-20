@@ -1,225 +1,178 @@
-import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
-import { Button } from './ui/button';
-import { Input } from './ui/input';
-import { Label } from './ui/label';
-import { Badge } from './ui/badge';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from './ui/dialog';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
-import { Textarea } from './ui/textarea';
-import { Plus, Receipt, IndianRupee, Calendar, CreditCard, Search } from 'lucide-react';
-import { api } from '../App';
-import { toast } from 'sonner';
+import React, { useEffect, useState } from "react";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from "./ui/Card";
+import {
+  Label,
+  Input,
+  Textarea,
+  Button,
+  Select,
+  SelectTrigger,
+  SelectValue,
+  SelectContent,
+  SelectItem,
+  Badge,
+} from "./ui";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "./ui/Dialog";
+import { Search, Receipt, Calendar, CreditCard, IndianRupee, Plus } from "lucide-react";
+import api from "../api"; // adjust path if needed
+import { formatCurrency } from "../utils"; // adjust path if needed
 
 const Payments = () => {
   const [payments, setPayments] = useState([]);
   const [students, setStudents] = useState([]);
-  const [studentFeeRecords, setStudentFeeRecords] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [feeStructures, setFeeStructures] = useState([]);
   const [formData, setFormData] = useState({
-    student_id: '',
-    student_fee_record_id: '',
-    amount: '',
-    payment_date: new Date().toISOString().split('T')[0],
-    payment_method: 'cash',
-    transaction_id: '',
-    notes: ''
+    student_id: "",
+    fee_structure_id: "",
+    amount: "",
+    payment_date: "",
+    payment_method: "",
+    transaction_id: "",
+    notes: "",
   });
+  const [loading, setLoading] = useState(true);
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
 
   const paymentMethods = [
-    { value: 'cash', label: 'Cash' },
-    { value: 'bank_transfer', label: 'Bank Transfer' },
-    { value: 'upi', label: 'UPI' },
-    { value: 'card', label: 'Card' },
-    { value: 'cheque', label: 'Cheque' }
+    { value: "cash", label: "Cash" },
+    { value: "card", label: "Card" },
+    { value: "upi", label: "UPI" },
+    { value: "bank_transfer", label: "Bank Transfer" },
   ];
 
-  useEffect(() => {
-    fetchPayments();
-    fetchStudents();
-  }, [searchTerm]);
+  // Fetch students
+  const fetchStudents = async () => {
+    const res = await api.get("/students");
+    setStudents(res.data);
+  };
 
+  // Fetch fee structures
+  const fetchFeeStructures = async () => {
+    const res = await api.get("/fee-structures");
+    setFeeStructures(res.data);
+  };
+
+  // Fetch payments
   const fetchPayments = async () => {
+    setLoading(true);
     try {
-      const params = {};
-      if (searchTerm) params.student_id = searchTerm;
-      
-      const response = await api.get('/payments', { params });
-      setPayments(response.data);
-    } catch (error) {
-      console.error('Error fetching payments:', error);
+      const res = await api.get("/payments");
+      setPayments(res.data);
     } finally {
       setLoading(false);
     }
   };
 
-  const fetchStudents = async () => {
-    try {
-      const response = await api.get('/students');
-      setStudents(response.data);
-    } catch (error) {
-      console.error('Error fetching students:', error);
-    }
-  };
+  useEffect(() => {
+    fetchStudents();
+    fetchFeeStructures();
+    fetchPayments();
+  }, []);
 
- const fetchStudentFeeRecords = async (studentId) => {
-  try {
-    const response = await api.get('/student-fee-records', {
-      params: { student_id: studentId, status: 'pending' }
-    });
-
-    const recordsWithNames = await Promise.all(
-      response.data.map(async (record) => {
-        try {
-          const feeRes = await api.get(`/fee-structures/${record.fee_structure_id}`);
-          return { ...record, fee_name: feeRes.data.name };
-        } catch {
-          return { ...record, fee_name: 'Unknown Fee' };
-        }
-      })
-    );
-
-    setStudentFeeRecords(recordsWithNames);
-  } catch (error) {
-    console.error('Error fetching student fee records:', error);
-  }
-};
-
-
-  const handleStudentChange = (studentId) => {
-    setFormData(prev => ({
-      ...prev,
-      student_id: studentId,
-      student_fee_record_id: ''
-    }));
-    if (studentId) {
-      fetchStudentFeeRecords(studentId);
-    } else {
-      setStudentFeeRecords([]);
-    }
+  const handleInputChange = (field, value) => {
+    setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    try {
-      await api.post('/payments', {
-        ...formData,
-        amount: parseFloat(formData.amount),
-        payment_date: new Date(formData.payment_date).toISOString()
-      });
-      toast.success('Payment recorded successfully!');
-      setIsDialogOpen(false);
-      setFormData({
-        student_id: '',
-        student_fee_record_id: '',
-        amount: '',
-        payment_date: new Date().toISOString().split('T')[0],
-        payment_method: 'cash',
-        transaction_id: '',
-        notes: ''
-      });
-      setStudentFeeRecords([]);
-      fetchPayments();
-    } catch (error) {
-      console.error('Error recording payment:', error);
-    }
+    await api.post("/payments", formData);
+    setIsDialogOpen(false);
+    fetchPayments();
   };
 
-  const handleInputChange = (field, value) => {
-    setFormData(prev => ({
-      ...prev,
-      [field]: value
-    }));
+  const getStudentName = (id) => {
+    const student = students.find((s) => s.id === id);
+    return student ? `${student.name} (${student.student_id})` : "Unknown";
   };
 
-  const formatCurrency = (amount) => {
-    return new Intl.NumberFormat('en-IN', {
-      style: 'currency',
-      currency: 'INR',
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
-    }).format(amount);
+  const getFeeStructureName = (id) => {
+    if (!id) return "General";
+    const fs = feeStructures.find((f) => f.id === id);
+    return fs ? fs.name : "Unknown Fee";
   };
 
   const getPaymentMethodBadge = (method) => {
-    const colors = {
-      cash: 'bg-green-100 text-green-800 border-green-200',
-      bank_transfer: 'bg-blue-100 text-blue-800 border-blue-200',
-      upi: 'bg-purple-100 text-purple-800 border-purple-200',
-      card: 'bg-orange-100 text-orange-800 border-orange-200',
-      cheque: 'bg-gray-100 text-gray-800 border-gray-200'
-    };
-    return colors[method] || colors.cash;
-  };
-
-  const getStudentName = (studentId) => {
-    const student = students.find(s => s.id === studentId);
-    return student ? student.name : 'Unknown Student';
+    switch (method) {
+      case "cash":
+        return "bg-green-100 text-green-800";
+      case "card":
+        return "bg-blue-100 text-blue-800";
+      case "upi":
+        return "bg-purple-100 text-purple-800";
+      case "bank_transfer":
+        return "bg-yellow-100 text-yellow-800";
+      default:
+        return "bg-gray-100 text-gray-800";
+    }
   };
 
   return (
-    <div className="space-y-6 animate-slideIn">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold gradient-text">Payment Management</h1>
-          <p className="text-gray-600 mt-1">Record and track student fee payments</p>
-        </div>
+    <div className="space-y-6">
+      {/* Add Payment Dialog */}
+      <div className="flex justify-end">
+        <Button onClick={() => setIsDialogOpen(true)} className="btn-gradient">
+          <Plus className="w-4 h-4 mr-2" />
+          Record Payment
+        </Button>
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-          <DialogTrigger asChild>
-            <Button className="btn-gradient">
-              <Plus className="w-4 h-4 mr-2" />
-              Record Payment
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="sm:max-w-[600px]">
+          <DialogContent>
             <DialogHeader>
               <DialogTitle>Record New Payment</DialogTitle>
-              <DialogDescription>
-                Record a payment made by a student for their fees.
-              </DialogDescription>
             </DialogHeader>
             <form onSubmit={handleSubmit} className="space-y-4">
+              {/* Student */}
               <div className="space-y-2">
                 <Label htmlFor="student_id">Student *</Label>
-                <Select value={formData.student_id} onValueChange={handleStudentChange}>
+                <Select
+                  value={formData.student_id}
+                  onValueChange={(value) => handleInputChange("student_id", value)}
+                >
                   <SelectTrigger>
                     <SelectValue placeholder="Select student" />
                   </SelectTrigger>
                   <SelectContent>
                     {students.map((student) => (
-  <SelectItem key={student.id} value={student.id}>
-    {student.name} ({student.student_id})
-  </SelectItem>
-))}
+                      <SelectItem key={student.id} value={student.id}>
+                        {student.name} ({student.student_id})
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>
-              
-{formData.student_id && (
-  <div className="space-y-2">
-    <Label htmlFor="student_fee_record_id">Fee Record *</Label>
-    <Select 
-      value={formData.student_fee_record_id} 
-      onValueChange={(value) => handleInputChange('student_fee_record_id', value)}
-    >
-      <SelectTrigger>
-        <SelectValue placeholder="Select fee record" />
-      </SelectTrigger>
-      <SelectContent>
-        {studentFeeRecords.map((record) => (
-          <SelectItem key={record.id} value={record.id}>
-            {`${record.fee_name || 'Fee'} — Paid: ₹${(record.amount_paid || 0).toLocaleString()} | Due: ₹${((record.amount_due || 0) - (record.amount_paid || 0)).toLocaleString()} | Status: ${record.payment_status || 'pending'}`}
-          </SelectItem>
-        ))}
-      </SelectContent>
-    </Select>
-  </div>
-)}
 
-              
+              {/* Fee Structure (optional) */}
+              <div className="space-y-2">
+                <Label htmlFor="fee_structure_id">Fee Type</Label>
+                <Select
+                  value={formData.fee_structure_id}
+                  onValueChange={(value) => handleInputChange("fee_structure_id", value)}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select fee type" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {feeStructures.map((fs) => (
+                      <SelectItem key={fs.id} value={fs.id}>
+                        {fs.name} — ₹{fs.amount.toLocaleString()}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Amount + Date */}
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="amount">Amount (₹) *</Label>
@@ -227,7 +180,7 @@ const Payments = () => {
                     id="amount"
                     type="number"
                     value={formData.amount}
-                    onChange={(e) => handleInputChange('amount', e.target.value)}
+                    onChange={(e) => handleInputChange("amount", e.target.value)}
                     placeholder="5000"
                     min="0"
                     step="0.01"
@@ -240,16 +193,20 @@ const Payments = () => {
                     id="payment_date"
                     type="date"
                     value={formData.payment_date}
-                    onChange={(e) => handleInputChange('payment_date', e.target.value)}
+                    onChange={(e) => handleInputChange("payment_date", e.target.value)}
                     required
                   />
                 </div>
               </div>
-              
+
+              {/* Method + Transaction ID */}
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="payment_method">Payment Method *</Label>
-                  <Select value={formData.payment_method} onValueChange={(value) => handleInputChange('payment_method', value)}>
+                  <Select
+                    value={formData.payment_method}
+                    onValueChange={(value) => handleInputChange("payment_method", value)}
+                  >
                     <SelectTrigger>
                       <SelectValue placeholder="Select method" />
                     </SelectTrigger>
@@ -267,25 +224,31 @@ const Payments = () => {
                   <Input
                     id="transaction_id"
                     value={formData.transaction_id}
-                    onChange={(e) => handleInputChange('transaction_id', e.target.value)}
+                    onChange={(e) => handleInputChange("transaction_id", e.target.value)}
                     placeholder="TXN123456789"
                   />
                 </div>
               </div>
-              
+
+              {/* Notes */}
               <div className="space-y-2">
                 <Label htmlFor="notes">Notes</Label>
                 <Textarea
                   id="notes"
                   value={formData.notes}
-                  onChange={(e) => handleInputChange('notes', e.target.value)}
+                  onChange={(e) => handleInputChange("notes", e.target.value)}
                   placeholder="Additional notes about this payment..."
                   rows={3}
                 />
               </div>
-              
+
+              {/* Buttons */}
               <div className="flex justify-end gap-2 pt-4">
-                <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setIsDialogOpen(false)}
+                >
                   Cancel
                 </Button>
                 <Button type="submit" className="btn-gradient">
@@ -313,7 +276,6 @@ const Payments = () => {
           </div>
         </CardContent>
       </Card>
-
       {/* Payments List */}
       {loading ? (
         <div className="flex justify-center py-8">
