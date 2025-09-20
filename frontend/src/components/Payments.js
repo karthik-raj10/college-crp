@@ -64,16 +64,29 @@ const Payments = () => {
     }
   };
 
-  const fetchStudentFeeRecords = async (studentId) => {
-    try {
-      const response = await api.get('/student-fee-records', {
-        params: { student_id: studentId, status: 'pending' }
-      });
-      setStudentFeeRecords(response.data);
-    } catch (error) {
-      console.error('Error fetching student fee records:', error);
-    }
-  };
+ const fetchStudentFeeRecords = async (studentId) => {
+  try {
+    const response = await api.get('/student-fee-records', {
+      params: { student_id: studentId, status: 'pending' }
+    });
+
+    const recordsWithNames = await Promise.all(
+      response.data.map(async (record) => {
+        try {
+          const feeRes = await api.get(`/fee-structures/${record.fee_structure_id}`);
+          return { ...record, fee_name: feeRes.data.name };
+        } catch {
+          return { ...record, fee_name: 'Unknown Fee' };
+        }
+      })
+    );
+
+    setStudentFeeRecords(recordsWithNames);
+  } catch (error) {
+    console.error('Error fetching student fee records:', error);
+  }
+};
+
 
   const handleStudentChange = (studentId) => {
     setFormData(prev => ({
@@ -177,9 +190,9 @@ const Payments = () => {
                   </SelectTrigger>
                   <SelectContent>
                     {students.map((student) => (
-                      <SelectItem key={student.id} value={student.id}>
-                        {student.name} ({student.student_id})
-                      </SelectItem>
+                      <SelectItem key={record.id} value={record.id}>
+  {`${record.fee_name || 'Fee'} — Paid: ₹${record.amount_paid.toLocaleString()} | Due: ₹${(record.amount_due - record.amount_paid).toLocaleString()} | Status: ${record.payment_status}`}
+</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
@@ -198,9 +211,9 @@ const Payments = () => {
                     <SelectContent>
                       {studentFeeRecords.map((record) => (
                        <SelectItem key={record.id} value={record.id}>
-  {`${record.fee_name} — Paid: ₹${record.amount_paid} | Due: ₹${record.amount_due - record.amount_paid}`}
+  {`Due: ₹${record.amount_due.toLocaleString()} | Paid: ₹${record.amount_paid.toLocaleString()} | Status: ${record.payment_status}`}
 </SelectItem>
-
+ 
                       ))}
                     </SelectContent>
                   </Select>
